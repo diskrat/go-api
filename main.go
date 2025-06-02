@@ -29,6 +29,7 @@ func main() {
 
 	router.Run("0.0.0.0:8080")
 }
+// teste
 
 // getAlbums responds with the list of all albums as JSON.
 func getAlbums(c *gin.Context) {
