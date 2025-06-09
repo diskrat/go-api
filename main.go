@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log"
 	"net/http"
-
+	"os"
+	"path/filepath"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,13 +24,39 @@ var albums = []album{
 }
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
+
+	logDir := "mydata"
+	if _, err := os.Stat(logDir); os.IsNotExist(err) {
+		err := os.Mkdir(logDir, 0755) // Creates the directory with read/write/execute permissions for the owner, and read/execute for others
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// Create a log file
+	logFilePath := filepath.Join(logDir, "bgs.txt")
+	logFile, err := os.Create(logFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer logFile.Close()
+
+	// Use a custom logger that writes to the file
+	gin.DefaultWriter = logFile
+	gin.DefaultErrorWriter = logFile
+
 	router := gin.Default()
 	router.GET("/albums", getAlbums)
+
 	router.GET("/albums/:id", getAlbumByID)
 	router.POST("/albums", postAlbums)
+	router.DELETE("/albums/:id", deleteAlbumByID)
+	router.PUT("/albums/:id", updateAlbumByID)
 
 	router.Run("0.0.0.0:8080")
 }
+
 // teste
 
 // getAlbums responds with the list of all albums as JSON.
@@ -64,5 +92,36 @@ func getAlbumByID(c *gin.Context) {
 			return
 		}
 	}
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+}
+
+func deleteAlbumByID(c *gin.Context) {
+	id := c.Param("id")
+	for i, a := range albums {
+		if a.ID == id {
+			albums = append(albums[:i], albums[i+1:]...)
+			c.IndentedJSON((http.StatusOK), gin.H{"message": "album deleted"})
+			return
+		}
+	}
+	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
+}
+
+func updateAlbumByID(c *gin.Context) {
+	var newAlbum album
+	if err := c.BindJSON(&newAlbum); err != nil {
+		return
+	}
+	id := c.Param("id")
+	for i, a := range albums {
+		if a.ID == id {
+			albums[i] = newAlbum
+			c.IndentedJSON(http.StatusAccepted, gin.H{"message": "album updated"})
+			return
+		}
+	}
+	//newAlbum.ID = id
+	//albums = append(albums, newAlbum)
+	//c.IndentedJSON(http.StatusCreated, gin.H{"message": "album created"})
 	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
 }

@@ -9,6 +9,7 @@ COPY . .
 
 RUN mkdir -p logs
 
+
 EXPOSE 8080
-# 
+
 CMD ["go", "run", "."]
