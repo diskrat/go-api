@@ -9,6 +9,7 @@ COPY . .
 
 RUN mkdir -p logs
 
+VOLUME /app/logs
 
 EXPOSE 8080
 
